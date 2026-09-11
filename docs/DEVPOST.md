@@ -18,7 +18,7 @@ FlowPilot turns a plain-English sentence into a **reliable, replayable browser w
 ## How we built it
 
 - **Backend**: Python + FastAPI; SSE for live execution events.
-- **Planner**: NVIDIA Nemotron (Llama-3.3-Nemotron-Super-49B) via Nebius Token Factory's OpenAI-compatible API, JSON mode. The LLM never generates code — it plans over a fixed action enum, and a deterministic executor runs it. That single decision makes runs reviewable, replayable, and safe.
+- **Planner**: NVIDIA Nemotron (Nemotron-3-Super, auto-resolved against the account's model list) via Nebius Token Factory's OpenAI-compatible API, JSON mode. The LLM never generates code — it plans over a fixed action enum, and a deterministic executor runs it. That single decision makes runs reviewable, replayable, and safe.
 - **Web access**: Tavily `/search`, `/extract`, `/crawl`, `/map`. Tavily is the agent's eyes, not a bolt-on search box: the planner prefers Tavily for anything static (`from_step` chaining feeds URLs from a search straight into extraction), and the browser handles only what truly needs clicking.
 - **Browser**: Playwright (headless Chromium) with field-aware extraction — the plan declares *which* columns to scrape and *where* they live, so the model reasons about structure while the executor stays deterministic.
 - **Frontend**: React + Vite — plan preview, revision, live step timeline, results table, CSV export.

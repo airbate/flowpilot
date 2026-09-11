@@ -20,8 +20,9 @@
 - 建议：在 Token Factory 文档首页给 Nemotron（nano/super/ultra）一个显眼入口 + 可复制的 JSON-mode/function-calling 示例，与黑客松强门槛直接对齐。
 
 ### 2026-09-12 ｜ Nebius Token Factory 文档站 ｜ AI 可读性
-- 卡壳：`docs.tokenfactory.nebius.com/llms.txt` 返回 404；`api-reference/examples/list-of-models.md` 路径抓取失败。开发时（尤其 agent 开发者）惯用 llms.txt 直接喂给 LLM 学 API。
-- 建议：补 `llms.txt`/`llms-full.txt`——对一个做 agent 平台的公司，这是成本最低、信号最强的开发者体验投资。
+- 顺畅：`docs.tokenfactory.nebius.com/llms.txt` 存在且内容完整（curl 验证，含全站 .md 索引）——agent 开发者可以直接喂给 LLM 学 API，好评。
+- 卡壳（轻微）：同一 URL 当天一次抓取返回过 404、数小时后 curl 正常，疑似 CDN 缓存不一致；目录页确认平台模型已切至 Nemotron-3 代（Super-120b 等），但文档站没有任何页面列出精确 API 模型 ID，未登录的控制台示例代码也只给 `MODEL_ID` 占位符——新用户拿到 key 前无法得知要填什么。
+- 建议：文档站增加"当前可用模型与精确 API ID"页面（或让 /v1/models 支持免鉴权只读访问）；目录页每行直接给出可复制的 model id。
 
 ### 2026-09-12 ｜ Devpost 赛事页 ｜ 信息完整性
 - 卡壳：`/prizes` 子路径 404，奖金结构只能从主页和规则页拼出来；评审四项未公布权重，参赛者无法做资源分配决策。

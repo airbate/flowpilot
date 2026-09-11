@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     # Nebius Token Factory (OpenAI-compatible inference)
     nebius_api_key: str = ""
     nebius_base_url: str = "https://api.tokenfactory.nebius.com/v1/"
-    planner_model: str = "nvidia/llama-3.3-nemotron-super-49b-v1"
+    # Catalog-checked 2026-09-12; scripts/smoke_nebius.py auto-corrects this if stale
+    planner_model: str = "nvidia/nemotron-3-super-120b-a12b"
 
     # Tavily
     tavily_api_key: str = ""
