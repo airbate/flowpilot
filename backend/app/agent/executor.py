@@ -4,6 +4,7 @@ import json
 from collections.abc import AsyncIterator
 
 from app.agent.schemas import ActionKind, ExecutionEvent, EventKind, FlowPlan, FlowStep
+from app.config import get_settings
 from app.llm.nebius_client import complete
 from app.tools.browser import BrowserTool
 from app.tools.tavily import TavilyTool
@@ -27,6 +28,7 @@ class FlowExecutor:
         self.rows: list[dict] = []
         self.columns: list[str] = []
         self.errors: list[str] = []
+        self.retries = get_settings().step_retries
         self._content: list[dict] = []  # everything collected for the normalize step
         self._step_outputs: dict[int, dict] = {}
         self._tavily: TavilyTool | None = None
@@ -41,13 +43,25 @@ class FlowExecutor:
         try:
             for i, step in enumerate(self.plan.steps):
                 yield ExecutionEvent(kind=EventKind.STEP_STARTED, step_index=i, message=step.description)
-                try:
-                    data = await self._run_step(i, step)
-                except Exception as exc:  # fail fast for now; W4 adds retry + human takeover
-                    msg = f"step {i} ({step.action.value}) failed: {exc}"
-                    self.errors.append(msg)
-                    yield ExecutionEvent(kind=EventKind.STEP_FAILED, step_index=i, message=msg)
-                    break
+                data: dict | None = None
+                attempts = self.retries + 1
+                for attempt in range(1, attempts + 1):
+                    try:
+                        data = await self._run_step(i, step)
+                        break
+                    except Exception as exc:  # noqa: BLE001 — a step failing must not kill the run
+                        if attempt < attempts:
+                            yield ExecutionEvent(
+                                kind=EventKind.STEP_STARTED,
+                                step_index=i,
+                                message=f"attempt {attempt}/{attempts} failed ({exc}) — retrying",
+                            )
+                            continue
+                        msg = f"step {i} ({step.action.value}) failed after {attempts} attempt(s): {exc}"
+                        self.errors.append(msg)
+                        yield ExecutionEvent(kind=EventKind.STEP_FAILED, step_index=i, message=msg)
+                if data is None:
+                    break  # fail the run fast after a step exhausts its attempts
                 self._step_outputs[i] = data
                 yield ExecutionEvent(kind=EventKind.STEP_FINISHED, step_index=i, message=step.description, data=data)
             ok = not self.errors
@@ -62,7 +76,7 @@ class FlowExecutor:
             if self._tavily is not None:
                 await self._tavily.close()
 
-    async def _run_step(self, index: int, step: FlowStep) -> dict:
+    async def _run_step(self, _index: int, step: FlowStep) -> dict:
         match step.action:
             case ActionKind.TAVILY_SEARCH:
                 self._tavily = self._tavily or TavilyTool()
@@ -83,6 +97,24 @@ class FlowExecutor:
                     self._content.append({"url": r.get("url"), "content": r.get("raw_content", "")})
                 return {"extracted": [{"url": r.get("url"), "length": len(r.get("raw_content") or "")} for r in extracted],
                         "failed": failed}
+            case ActionKind.TAVILY_CRAWL:
+                self._tavily = self._tavily or TavilyTool()
+                url = step.url or (self._urls_from_step(step.from_step) or [None])[0]
+                if not url:
+                    raise ValueError("tavily_crawl needs url or a from_step pointing at a search")
+                result = await self._tavily.crawl(url, max_depth=1, max_pages=5)
+                pages = result.get("results", [])
+                for r in pages:
+                    self._content.append({"url": r.get("url"), "content": r.get("raw_content", "")})
+                return {"crawled": [{"url": r.get("url"), "length": len(r.get("raw_content") or "")} for r in pages]}
+            case ActionKind.TAVILY_MAP:
+                self._tavily = self._tavily or TavilyTool()
+                url = step.url or (self._urls_from_step(step.from_step) or [None])[0]
+                if not url:
+                    raise ValueError("tavily_map needs url or a from_step pointing at a search")
+                result = await self._tavily.map_site(url)
+                links = result.get("results", [])
+                return {"links": links[:50], "total": len(links)}
             case ActionKind.NORMALIZE:
                 return await self._normalize()
             case _:

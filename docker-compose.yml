@@ -1,0 +1,20 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      NEBIUS_API_KEY: ${NEBIUS_API_KEY:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      # Defaults to mock mode so the stack runs with zero keys; set MOCK_PLANNER=0
+      # when NEBIUS_API_KEY is provided.
+      MOCK_PLANNER: ${MOCK_PLANNER:-1}
+    volumes:
+      - shots:/app/screenshots
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  shots:

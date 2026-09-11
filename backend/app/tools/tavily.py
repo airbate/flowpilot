@@ -29,5 +29,17 @@ class TavilyTool:
         resp.raise_for_status()
         return resp.json()
 
+    async def crawl(self, url: str, *, max_depth: int = 1, max_pages: int = 5) -> dict:
+        resp = await self._client.post(
+            "/crawl", json={"url": url, "max_depth": max_depth, "max_pages": max_pages}
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def map_site(self, url: str) -> dict:
+        resp = await self._client.post("/map", json={"url": url})
+        resp.raise_for_status()
+        return resp.json()
+
     async def close(self) -> None:
         await self._client.aclose()

@@ -32,6 +32,45 @@ def test_collect_rows_wraps_list_rows_keeps_dict_rows():
     assert ex.rows == [{"title": "x", "price": "1"}, {"cells": ["a", "b"]}]
 
 
+async def test_retry_then_fail_emits_retry_and_failure_events(monkeypatch):
+    ex = FlowExecutor(_plan(ActionKind.EXTRACT))
+    ex.retries = 1
+    calls = {"n": 0}
+
+    async def always_fails(index, step):
+        calls["n"] += 1
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(ex, "_run_step", always_fails)
+    events = [e async for e in ex.run()]
+
+    assert calls["n"] == 2  # first attempt + one retry
+    retry_notes = [e for e in events if "retrying" in e.message]
+    assert len(retry_notes) == 1
+    failed = [e for e in events if e.kind is EventKind.STEP_FAILED]
+    assert len(failed) == 1 and "after 2 attempt(s)" in failed[0].message
+    assert events[-1].data["ok"] is False
+
+
+async def test_retry_succeeds_on_second_attempt(monkeypatch):
+    ex = FlowExecutor(_plan(ActionKind.EXTRACT))
+    ex.retries = 1
+    calls = {"n": 0}
+
+    async def flaky(index, step):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("transient")
+        return {"rows": [{"title": "x"}]}
+
+    monkeypatch.setattr(ex, "_run_step", flaky)
+    events = [e async for e in ex.run()]
+
+    assert calls["n"] == 2
+    assert any(e.kind is EventKind.STEP_FINISHED for e in events)
+    assert events[-1].data["ok"] is True
+
+
 async def test_fail_fast_on_step_error(monkeypatch):
     ex = FlowExecutor(_plan(ActionKind.EXTRACT, ActionKind.WAIT))
 

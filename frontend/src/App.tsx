@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type FlowStep = {
   action: string
@@ -53,6 +53,15 @@ export default function App() {
   const [columns, setColumns] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [reviseText, setReviseText] = useState('')
+  const [health, setHealth] = useState<{ nemotron: boolean; tavily: boolean; mock_planner: boolean } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then(setHealth)
+      .catch(() => {})
+  }, [])
 
   const finishedAt = useMemo(() => {
     const failed = new Set(events.filter((e) => e.kind === 'step_failed').map((e) => e.step_index))
@@ -75,6 +84,26 @@ export default function App() {
       })
       if (!res.ok) throw new Error((await res.json()).detail ?? `plan failed (${res.status})`)
       setPlan(await res.json())
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function revisePlan() {
+    if (!plan || !reviseText.trim()) return
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/api/plan/revise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, instruction: reviseText }),
+      })
+      if (!res.ok) throw new Error((await res.json()).detail ?? `revise failed (${res.status})`)
+      setPlan(await res.json())
+      setReviseText('')
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e))
     } finally {
@@ -165,6 +194,17 @@ export default function App() {
               </li>
             ))}
           </ol>
+          <div className="row">
+            <input
+              className="grow"
+              value={reviseText}
+              onChange={(e) => setReviseText(e.target.value)}
+              placeholder='Revise in plain English, e.g. "step 2: only grab prices"'
+            />
+            <button className="small" onClick={revisePlan} disabled={busy || !reviseText.trim()}>
+              Revise
+            </button>
+          </div>
         </section>
       )}
 
@@ -175,6 +215,13 @@ export default function App() {
             {events.map((e, i) => (
               <li key={i} className={e.kind}>
                 <span className="icon">{EVENT_ICON[e.kind]}</span> {e.message}
+                {e.kind === 'step_finished' && typeof e.data?.screenshot === 'string' && (
+                  <img
+                    className="shot"
+                    src={`/screenshots/${(e.data.screenshot as string).split('/').pop()}`}
+                    alt="replay evidence"
+                  />
+                )}
               </li>
             ))}
           </ul>
@@ -219,6 +266,11 @@ export default function App() {
           </div>
         </section>
       )}
+      <footer className="status">
+        Nemotron {health?.nemotron ? '● connected' : '○ not configured'}
+        {' · '}Tavily {health?.tavily ? '● connected' : '○ not configured'}
+        {health?.mock_planner ? ' · mock planner on' : ''}
+      </footer>
     </main>
   )
 }

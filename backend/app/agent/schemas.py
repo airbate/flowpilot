@@ -14,6 +14,8 @@ from pydantic import BaseModel, Field
 class ActionKind(str, Enum):
     TAVILY_SEARCH = "tavily_search"
     TAVILY_EXTRACT = "tavily_extract"
+    TAVILY_CRAWL = "tavily_crawl"
+    TAVILY_MAP = "tavily_map"
     NORMALIZE = "normalize"  # LLM turns collected content into table rows
     NAVIGATE = "navigate"
     CLICK = "click"

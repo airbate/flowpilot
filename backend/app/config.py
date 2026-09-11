@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     # Deterministic canned planner for demos/CI when no NEBIUS_API_KEY is available
     mock_planner: bool = False
+    # Extra attempts per step after the first one fails (0 = fail fast)
+    step_retries: int = 1
 
 
 @lru_cache

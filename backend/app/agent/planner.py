@@ -38,6 +38,37 @@ Rules:
  "steps": [{"action": "...", "description": "why this step", ...params}]}"""
 
 
+REVISE_PROMPT = """You are FlowPilot's planner. Below is the current step plan (JSON) and the
+user's change request. Return the UPDATED plan.
+
+Keep unchanged steps exactly as they are; only modify, add, or remove what the
+request requires. Preserve step order and the STRICT JSON schema:
+
+{"goal": "...", "summary": "one-line plan summary",
+ "steps": [{"action": "...", "description": "why this step", ...params}]}
+
+Current plan:
+{plan}
+
+Change request: {instruction}
+
+Output STRICT JSON only:"""
+
+
+async def revise_plan(plan: FlowPlan, instruction: str) -> FlowPlan:
+    """Apply a natural-language change to an existing plan (multi-round editing)."""
+    if get_settings().mock_planner:
+        revised = plan.model_copy(deep=True)
+        revised.summary = f"[mock] plan unchanged; would apply: {instruction}"
+        return revised
+    raw = await complete(
+        REVISE_PROMPT.format(plan=plan.model_dump_json(), instruction=instruction),
+        "Apply the change.",
+        json_mode=True,
+    )
+    return parse_plan(raw, fallback_goal=plan.goal)
+
+
 async def make_plan(goal: str) -> FlowPlan:
     if get_settings().mock_planner:
         return mock_plan(goal)
