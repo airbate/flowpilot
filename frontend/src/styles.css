@@ -1,0 +1,157 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+}
+
+.app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+h1 {
+  margin-bottom: 0.25rem;
+}
+
+.tagline {
+  color: #9aa1b2;
+  margin-top: 0;
+}
+
+.card {
+  background: #171a23;
+  border: 1px solid #262b3a;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0f1117;
+  color: inherit;
+  border: 1px solid #262b3a;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font: inherit;
+  resize: vertical;
+}
+
+button {
+  background: #4f6ef7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.4rem;
+  font: inherit;
+  cursor: pointer;
+  margin-top: 0.75rem;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+code {
+  background: #0f1117;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  color: #8ab4ff;
+}
+
+.steps li,
+.events li {
+  margin: 0.35rem 0;
+}
+
+.steps li.done {
+  color: #7ee787;
+}
+
+.steps li.failed {
+  color: #ff7b72;
+}
+
+.steps .meta {
+  color: #9aa1b2;
+  font-size: 0.85em;
+}
+
+.summary {
+  color: #9aa1b2;
+  font-size: 0.8em;
+  font-weight: normal;
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.card.error {
+  border-color: #ff7b72;
+  color: #ff7b72;
+}
+
+.events .icon {
+  margin-right: 0.25rem;
+}
+
+.events .step_failed {
+  color: #ff7b72;
+}
+
+.events .run_finished {
+  color: #7ee787;
+}
+
+button.small {
+  font-size: 0.8em;
+  padding: 0.3rem 0.8rem;
+  margin-left: 0.75rem;
+  margin-top: 0;
+  background: #262b3a;
+}
+
+button.primary {
+  background: #2ea043;
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+}
+
+.tablewrap {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9em;
+}
+
+th,
+td {
+  text-align: left;
+  border-bottom: 1px solid #262b3a;
+  padding: 0.45rem 0.6rem;
+}
+
+th {
+  color: #9aa1b2;
+  font-weight: 600;
+}
+
+td a {
+  color: #8ab4ff;
+}
