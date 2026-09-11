@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend
+        run: pip install -e ".[dev]"
+      - name: Unit tests
+        run: python -m pytest tests -q
+      - name: Real browser e2e (keyless, mock-free executor path)
+        run: |
+          playwright install --with-deps chromium
+          python -m scripts.demo_browser
+
+  docker-stack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the full stack
+        run: docker compose build
+      - name: Boot and wait for nginx
+        run: |
+          docker compose up -d
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/health >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          docker compose ps
+      - name: End-to-end smoke through nginx (plan -> SSE run)
+        run: |
+          set -e
+          echo "frontend:"; curl -sf -o /dev/null -w '%{http_code}\n' http://localhost:8080/
+          echo "health:"; curl -sf http://localhost:8080/health | tee /dev/stderr | grep -q '"status":"ok"'
+          PLAN=$(curl -sf -X POST http://localhost:8080/api/plan -H 'Content-Type: application/json' -d '{"goal":"demo"}')
+          echo "plan: $PLAN" | head -c 300; echo
+          echo "$PLAN" | grep -q '"steps"'
+          curl -sN -X POST http://localhost:8080/api/run -H 'Content-Type: application/json' -d "$PLAN" | tee /dev/stderr | grep -q 'run_finished'
+          echo "SSE run reached run_finished — stack OK"
