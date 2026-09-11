@@ -1,5 +1,7 @@
 # FlowPilot
 
+[![CI](https://github.com/airbate/flowpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/airbate/flowpilot/actions/workflows/ci.yml)
+
 > Plain-English web process automation copilot.
 > **NVIDIA Nemotron** plans the steps (on **Nebius Token Factory**), **Tavily** reads the live web, and **Playwright** executes only the steps that truly need a browser.
 
